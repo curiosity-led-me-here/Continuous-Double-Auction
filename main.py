@@ -8,34 +8,34 @@ best_ask = max(best)
 bid_volume = {j:abs(np.random.randn()) for j,_ in enumerate(ticks)}
 ask_volume = {j:abs(np.random.randn()) for j,_ in enumerate(ticks)}
 
-spread_vol = 3.0
-t = 10
+T = 10
 mu_bid = 1.0
-mu_ask = 1.0
-alpha = 2.0
+mu_ask = mu_bid
+alpha = 0.05
 order_size = 0.1
-cancel = 1 / t
+cancel = 0.01
 
-for dt in range(t):
+dt = 1.0
+for t in range(T):
     # market orders
     mu_buy = np.random.poisson(mu_bid * dt) * order_size
     mu_sell = np.random.poisson(mu_ask * dt) * order_size
     
     # for buy side
-    tick_bid = best_ask
-    while mu_buy > 0:
-        eat = min(ask_volume[tick_ask][1], mu_buy)
-        bid_volume[tick][1] -= eat
-        mu_buy -= eat
-        if bid_volume[tick][1] == 0:
-            tick_bid += 1
     tick_ask = best_ask
+    while mu_buy > 0:
+        eat = min(ask_volume[tick_ask], mu_buy)
+        ask_volume[tick_ask] -= eat
+        mu_buy -= eat
+        if ask_volume[tick_ask] == 0:
+            tick_ask += 1
+    tick_bid = best_bid
     while mu_sell > 0:
-        eat = min(ask_volume[tick][1], mu_sell)
-        ask_volume[tick][1] -= eat
+        eat = min(bid_volume[tick_bid], mu_sell)
+        bid_volume[tick_bid] -= eat
         mu_sell -= eat
-        if ask_volume[tick][1] == 0:
-            tick_ask -= 1
+        if bid_volume[tick_bid] == 0:
+            tick_bid -= 1
     
     # limit orders
     for tick, _ in bid_volume.items():
@@ -55,7 +55,14 @@ for dt in range(t):
         k_order = int(vol*1000)
         lam = k_order * cancel * dt
         X = np.random.poisson(lam)
-        X = min(X, k_orders)
-        k_orders -= X
-        bid_volume[tick] = k_orders / 1000
+        X = min(X, k_order)
+        k_order -= X
+        bid_volume[tick] = k_order / 1000
+    for tick, vol in ask_volume.items():
+        k_order = int(vol*1000)
+        lam = k_order * cancel * dt
+        X = np.random.poisson(lam)
+        X = min(X, k_order)
+        k_order -= X
+        ask_volume[tick] = k_order / 1000
 
