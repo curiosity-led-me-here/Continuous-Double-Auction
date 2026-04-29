@@ -11,7 +11,7 @@ best_ask = max(best)
 bid_volume = {j:abs(np.random.randn()) for j,_ in enumerate(ticks)}
 ask_volume = {j:abs(np.random.randn()) for j,_ in enumerate(ticks)}
 
-T = 10
+T = 100
 mu_bid = 1.0
 mu_ask = mu_bid
 alpha = 0.05
