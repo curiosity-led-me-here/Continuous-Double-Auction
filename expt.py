@@ -21,6 +21,28 @@ cancel = 0.01
 dt = 1.0
 price_history = []
 
+def MarketOrder(best_quote, mu, vol, order_type, tiks=ticks):
+    tick = best_quote
+    n = len(tiks)
+    while mu > 0:
+        if vol[tick] > 1e-9:
+            eat = min(vol[tick], mu)
+            vol[tick] -= eat
+            mu -= eat
+            if vol[tick] <= 1e-9:
+                vol[tick] = 0.0
+        else:
+            if order_type == "buyside":
+                if tick < n - 1:
+                    tick += 1
+                else:
+                    break
+            elif order_type == "sellside":
+                if tick > 0:
+                    tick -= 1
+                else:
+                    break
+
 #EVOLUTION LOOP
 for t in range(T):
     # market orders
@@ -28,23 +50,10 @@ for t in range(T):
     mu_sell = np.random.poisson(mu_ask * dt) * order_size
     
     # for buy side
-    tick_ask = best_ask
-    while mu_buy > 0:
-        if ask_volume[tick_ask] <= 1e-9 and tick_ask < len(ticks):
-            tick_ask += 1
-        if tick_ask >= len(ticks):
-            break
-        eat = min(ask_volume[tick_ask], mu_buy)
-        ask_volume[tick_ask] -= eat
-        mu_buy -= eat
+    MarketOrder(best_quote=best_ask, mu=mu_buy, vol=ask_volume)
+
     # for sell side
-    tick_bid = best_bid
-    while mu_sell > 0.0:
-        if bid_volume[tick_bid] <= 1e-9:
-            tick_bid -= 1
-        eat = min(bid_volume[tick_bid], mu_sell)
-        bid_volume[tick_bid] -= eat
-        mu_sell -= eat
+    MarketOrder(best_quote=best_bid, mu=mu_sell, vol=bid_volume)
 
     # limit orders
     for tick, _ in bid_volume.items():
