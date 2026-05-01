@@ -58,22 +58,16 @@ for t in range(T):
     # limit orders
     X = np.random.poisson(lam=alpha*dt*len(ticks), size=2)
     
-    # buyside
-    for _ in range(X[0]):
-        while True:
-            k = np.random.geometric(0.5) - 1
-            if best_bid - k >= 0:
-                break
-        bid_volume[best_bid - k] += order_size
+    for i in range(X[0]):
+        k = np.random.geometric(0.5)
 
-    # sellside
-    for _ in range(X[1]):
-        while True:
-            k = np.random.geometric(0.5) - 1
-            if best_ask + k < len(ticks):
-                break
-        ask_volume[best_ask + k] += order_size
-        
+
+    for tick, _ in ask_volume.items():
+        if tick >= best_ask:
+            ss = tick - best_ask
+            lam = alpha * dt * np.exp(-ss)
+            X = np.random.poisson(lam)
+            ask_volume[tick] += X * order_size
     
     # random cancellations
     for tick, vol in bid_volume.items():

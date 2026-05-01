@@ -1,2 +1,0 @@
-1. Boundary conditions to for price to remain inside the book
-2. 
