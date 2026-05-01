@@ -58,21 +58,21 @@ for t in range(T):
     # limit orders
     X = np.random.poisson(lam=alpha*dt*len(ticks), size=2)
     
-    # buyside
+    # buyside (including in-spread orders)
     for _ in range(X[0]):
         while True:
-            k = np.random.geometric(0.5) - 1
-            if best_bid - k >= 0:
+            k = np.random.geometric(0.5)
+            if best_ask - k >= 0:
                 break
-        bid_volume[best_bid - k] += order_size
+        bid_volume[best_ask - k] += order_size
 
-    # sellside
+    # sellside (including in-spread orders / marketable orders)
     for _ in range(X[1]):
         while True:
-            k = np.random.geometric(0.5) - 1
-            if best_ask + k < len(ticks):
+            k = np.random.geometric(0.5)
+            if best_bid + k < len(ticks):
                 break
-        ask_volume[best_ask + k] += order_size
+        ask_volume[best_bid + k] += order_size
         
     
     # random cancellations
