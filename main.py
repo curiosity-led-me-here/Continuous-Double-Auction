@@ -52,6 +52,12 @@ def get_best_bid(bid_volume):
 def get_best_ask(ask_volume):
     return min(tick for tick, v in ask_volume.items() if v > 1e-9)
 
+
+LO_buy_order = []
+LO_sell_order = []
+LO_cross_buy = []
+LO_cross_sell = []
+
 #EVOLUTION LOOP
 for t in range(T):
     # MARKET ORDERS
@@ -59,8 +65,10 @@ for t in range(T):
     mu_sell = np.random.poisson(mu_ask * dt) * order_size
     # for buy side
     leftover_buy_order = MarketOrder(best_quote=get_best_ask(ask_volume), mu=mu_buy, vol=ask_volume, order_type="buyside")
+    LO_buy_order.append((t, mu_buy, mu_buy-leftover_buy_order, leftover_buy_order))
     # for sell side
     leftover_sell_order = MarketOrder(best_quote=get_best_bid(bid_volume), mu=mu_sell, vol=bid_volume, order_type="sellside")
+    LO_sell_order.append((t, mu_sell, mu_sell - leftover_sell_order, leftover_sell_order))
 
     # LIMIT ORDERS
     X = np.random.poisson(lam=alpha*dt*len(ticks), size=2)
@@ -68,6 +76,7 @@ for t in range(T):
     for _ in range(X[0]):
         if np.random.rand() < 0.05:             # bid orders eat best ask therefore cross orders would be beyond best ask and would eat best ask like normal market buy orders.
             leftover_cross_buy = MarketOrder(best_quote=get_best_ask(ask_volume), mu=order_size, vol=ask_volume, order_type="buyside")
+            LO_cross_buy.append((t, order_size - leftover_cross_buy, leftover_cross_buy))
         else:
             best_ask = get_best_ask(ask_volume)
             while True:
@@ -79,6 +88,8 @@ for t in range(T):
     for _ in range(X[1]):
         if np.random.rand() < 0.05:             # ask orders eat best bid therefore cross orders would be beyond best bid and would eat best bids like normal market sell orders.
             leftover_cross_sell = MarketOrder(best_quote=get_best_bid(bid_volume), mu=order_size, vol=bid_volume, order_type="sellside")
+            LO_cross_sell.append((t, order_size - leftover_cross_sell, leftover_cross_sell))
+            LO_cross_sell.append((t, leftover_cross_sell))
         else:
             best_bid = get_best_bid(bid_volume)
             while True:
