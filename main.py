@@ -17,7 +17,7 @@ ask_volume = {j:(abs(np.random.randn()) if j >= best_ask else 0.0) for j,_ in en
 T = 100
 mu_bid = 1.0
 mu_ask = mu_bid
-alpha = 0.05
+alpha = 0.1
 order_size = 0.1
 cancel = 0.01
 dt = 1.0
@@ -48,10 +48,11 @@ def MarketOrder(best_quote, mu, vol, order_type, tiks=ticks):
 
 # recompute best_bid and best_ask by min/max tick with non-zero volume.
 def get_best_bid(bid_volume):
-    return max(tick for tick, v in bid_volume.items() if v > 1e-9)
+    idx = (tick for tick, v in bid_volume.items() if v > 1e-9)
+    return max(idx) if idx else None
 def get_best_ask(ask_volume):
-    return min(tick for tick, v in ask_volume.items() if v > 1e-9)
-
+    idx = (tick for tick, v in ask_volume.items() if v > 1e-9)
+    return min(idx) if idx else None
 
 LO_buy_order = []
 LO_sell_order = []
