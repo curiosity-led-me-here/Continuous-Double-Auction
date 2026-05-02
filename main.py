@@ -43,28 +43,35 @@ def MarketOrder(best_quote, mu, vol, order_type, tiks=ticks):
                 else:
                     break
 
+# recompute best_bid and best_ask by min/max tick with non-zero volume.
+def get_best_bid(bid_volume):
+    return max(tick for tick, v in bid_volume.items() if v > 1e-9)
+def get_best_ask(ask_volume):
+    return min(tick for tick, v in ask_volume.items() if v > 1e-9)
+
 #EVOLUTION LOOP
 for t in range(T):
-    # market orders
+    # MARKET ORDERS
     mu_buy = np.random.poisson(mu_bid * dt) * order_size
     mu_sell = np.random.poisson(mu_ask * dt) * order_size
-    
     # for buy side
-    MarketOrder(best_quote=best_ask, mu=mu_buy, vol=ask_volume)
-
+    MarketOrder(best_quote=get_best_ask(ask_volume), mu=mu_buy, vol=ask_volume, order_type="buyside")
     # for sell side
-    MarketOrder(best_quote=best_bid, mu=mu_sell, vol=bid_volume)
+    MarketOrder(best_quote=get_best_bid(bid_volume), mu=mu_sell, vol=bid_volume, order_type="sellside")
 
-    # limit orders
+    # LIMIT ORDERS
     X = np.random.poisson(lam=alpha*dt*len(ticks), size=2)
-    
     # buyside (including in-spread orders)
     for _ in range(X[0]):
-        while True:
-            k = np.random.geometric(0.5)
-            if best_ask - k >= 0:
-                break
-        bid_volume[best_ask - k] += order_size
+        if np.random.rand() < 0.05:
+            MarketOrder(best_quote=get_best_ask(ask_volume), mu=order_size, vol=ask_volume, order_type="buyside")
+        else:
+            best_ask = get_best_ask(ask_volume)
+            while True:
+                k = np.random.geometric(0.5)
+                if best_ask - k >= 0:
+                    break
+            bid_volume[best_ask - k] += order_size
 
     # sellside (including in-spread orders / marketable orders)
     for _ in range(X[1]):
