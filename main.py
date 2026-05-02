@@ -1,13 +1,15 @@
 import numpy as np
-import matplotlib.pyplot as plt
 import time
 from terminal import print_order_book
 
 ticks = np.arange(start=0.0, stop=11.0, step=1.0, dtype=np.float32)
-best = np.random.choice(np.arange(4, 6), size=2)
+initial_spread_vol = 2
+low = np.median(ticks)-initial_spread_vol
+high = np.median(ticks)+initial_spread_vol
+print(low, high)
+best = np.random.randint(low=low, high=high, size=2)
 best_bid = min(best)
 best_ask = max(best)
-print(best_bid, best_ask)
 
 bid_volume = {j:(abs(np.random.randn()) if j <= best_bid else 0.0) for j,_ in enumerate(ticks)}
 ask_volume = {j:(abs(np.random.randn()) if j >= best_ask else 0.0) for j,_ in enumerate(ticks)}
@@ -42,6 +44,7 @@ def MarketOrder(best_quote, mu, vol, order_type, tiks=ticks):
                     tick -= 1
                 else:
                     break
+    return mu
 
 # recompute best_bid and best_ask by min/max tick with non-zero volume.
 def get_best_bid(bid_volume):
@@ -55,16 +58,16 @@ for t in range(T):
     mu_buy = np.random.poisson(mu_bid * dt) * order_size
     mu_sell = np.random.poisson(mu_ask * dt) * order_size
     # for buy side
-    MarketOrder(best_quote=get_best_ask(ask_volume), mu=mu_buy, vol=ask_volume, order_type="buyside")
+    leftover_buy_order = MarketOrder(best_quote=get_best_ask(ask_volume), mu=mu_buy, vol=ask_volume, order_type="buyside")
     # for sell side
-    MarketOrder(best_quote=get_best_bid(bid_volume), mu=mu_sell, vol=bid_volume, order_type="sellside")
+    leftover_sell_order = MarketOrder(best_quote=get_best_bid(bid_volume), mu=mu_sell, vol=bid_volume, order_type="sellside")
 
     # LIMIT ORDERS
     X = np.random.poisson(lam=alpha*dt*len(ticks), size=2)
-    # buyside (including in-spread orders)
+    # buyside (including in-spread orders)    
     for _ in range(X[0]):
-        if np.random.rand() < 0.05:
-            MarketOrder(best_quote=get_best_ask(ask_volume), mu=order_size, vol=ask_volume, order_type="buyside")
+        if np.random.rand() < 0.05:             # bid orders eat best ask therefore cross orders would be beyond best ask and would eat best ask like normal market buy orders.
+            leftover_cross_buy = MarketOrder(best_quote=get_best_ask(ask_volume), mu=order_size, vol=ask_volume, order_type="buyside")
         else:
             best_ask = get_best_ask(ask_volume)
             while True:
@@ -72,17 +75,20 @@ for t in range(T):
                 if best_ask - k >= 0:
                     break
             bid_volume[best_ask - k] += order_size
-
     # sellside (including in-spread orders / marketable orders)
     for _ in range(X[1]):
-        while True:
-            k = np.random.geometric(0.5)
-            if best_bid + k < len(ticks):
-                break
-        ask_volume[best_bid + k] += order_size
-        
+        if np.random.rand() < 0.05:             # ask orders eat best bid therefore cross orders would be beyond best bid and would eat best bids like normal market sell orders.
+            leftover_cross_sell = MarketOrder(best_quote=get_best_bid(bid_volume), mu=order_size, vol=bid_volume, order_type="sellside")
+        else:
+            best_bid = get_best_bid(bid_volume)
+            while True:
+                k = np.random.geometric(0.5)
+                if best_bid + k < len(ticks):
+                    break
+            ask_volume[best_bid + k] += order_size
+            
     
-    # random cancellations
+    # CANCELLATIONS
     for tick, vol in bid_volume.items():
         k_order = int(vol*1000)
         lam = k_order * cancel * dt
@@ -98,6 +104,7 @@ for t in range(T):
         k_order -= X
         ask_volume[tick] = k_order / 1000
     
+    # COSMETIC DECORATION
     price_history.append((best_bid + best_ask) / 2)
     current_asks = [tick for tick, vol in ask_volume.items() if vol > 0.001]
     current_bids = [tick for tick, vol in bid_volume.items() if vol > 0.001]
