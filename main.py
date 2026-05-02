@@ -123,3 +123,13 @@ for t in range(T):
     best_bid = max(current_bids) if current_bids else 0
     print_order_book(t, ticks, bid_volume, ask_volume, best_bid, best_ask, price_history)
     time.sleep(0.5)
+
+'''
+NOTES:
+1) Notice the structure and regime created here. Market orders follow poisson distribution INDIVIDUALLY. 
+Whereas Limit orders in totality are poisson which is then distributed to random ticks.
+What this is doing is modelling a behaviour where market orders are much stronger due to higher quantity sampling because poisson is applied individually.
+Therefore it is intentionally created to model impatient traders and quick moving ones. 
+2) The expect behaviour is higher spreads on an average and quick liquidity sweeps.
+3) In the future, we'd make incoming market orders small and limit order (refilling rate alpha) large to check liquidity persistance.
+'''
